@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+body{background:black;}
+</style>
+</head>
+
+<body>
+<canvas id="radar" width="700" height="700"></canvas>
+
+<script type="module">
+import { updateRadarScan } from "../core/radarEngine.js";
+import { on } from "../core/bus.js";
+
+let targets = [];
+
+on("state:update", s => {
+  targets = s.targets;
+});
+
+
+const c = document.getElementById("radar");
+const ctx = c.getContext("2d");
+const W=700, H=700;
+const cx=W/2, cy=H/2;
+const R=320;
+let angle=0;
+
+function drawGrid(){
+  ctx.strokeStyle="rgba(0,255,100,0.15)";
+  ctx.font="10px monospace";
+
+  [0.25,0.5,0.75,1].forEach((p,i)=>{
+    ctx.beginPath();
+    ctx.arc(cx,cy,R*p,0,Math.PI*2);
+    ctx.stroke();
+    ctx.fillText((p*100)+"km", cx+5, cy-R*p+12);
+  });
+
+  [0,90,180,270].forEach(d=>{
+    const a=d*Math.PI/180;
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.lineTo(cx+Math.cos(a)*R, cy+Math.sin(a)*R);
+    ctx.stroke();
+    ctx.fillText(d+"°", cx+Math.cos(a)*R*1.05, cy+Math.sin(a)*R*1.05);
+  });
+}
+
+function drawTargets(){
+  targets.forEach(t=>{
+    const x=cx+Math.cos(t.a)*t.r*R;
+    const y=cy+Math.sin(t.a)*t.r*R;
+
+    ctx.strokeStyle=t.hostile?"red":"lime";
+    ctx.beginPath();
+    ctx.moveTo(x,y);
+    ctx.lineTo(x-Math.cos(t.a)*15, y-Math.sin(t.a)*15);
+    ctx.stroke();
+
+    ctx.fillStyle=t.hostile?"red":"lime";
+    ctx.beginPath();
+    ctx.arc(x,y,5,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.fillText(t.id, x+8, y-8);
+  });
+}
+
+function drawSweep(){
+  ctx.strokeStyle="rgba(0,255,120,0.8)";
+  ctx.beginPath();
+  ctx.moveTo(cx,cy);
+  ctx.lineTo(cx+Math.cos(angle)*R, cy+Math.sin(angle)*R);
+  ctx.stroke();
+  updateRadarScan(angle);
+  angle+=0.008;
+}
+
+function loop(){
+  ctx.fillStyle="rgba(0,0,0,0.25)";
+  ctx.fillRect(0,0,W,H);
+  drawGrid();
+  drawTargets();
+  drawSweep();
+  requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+</body>
+</html>

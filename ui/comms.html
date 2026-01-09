@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-black text-green-400 font-mono text-xs p-2 h-screen overflow-hidden">
+
+<div class="border border-green-600 p-2 h-full flex flex-col">
+  <div class="text-sm tracking-widest text-green-500 mb-2 border-b border-green-600 pb-1">
+    ╔═ SECURE COMMUNICATIONS ═╗
+  </div>
+
+  <div class="mb-2 bg-gray-950 border border-green-600 p-2">
+    <div class="flex justify-between items-center mb-1">
+      <span class="text-green-500">CHANNEL STATUS</span>
+      <span id="encryption" class="text-cyan-400 text-[10px]">AES-256 ENCRYPTED</span>
+    </div>
+    <div class="grid grid-cols-3 gap-1 text-[10px]">
+      <div class="border border-green-700 p-1">CH-1: <span class="text-green-400">ACTIVE</span></div>
+      <div class="border border-green-700 p-1">CH-2: <span class="text-green-400">ACTIVE</span></div>
+      <div class="border border-green-700 p-1">CH-3: <span class="text-yellow-400">STANDBY</span></div>
+    </div>
+  </div>
+
+  <div class="mb-2 bg-gray-950 border border-amber-600 p-2">
+    <div class="text-amber-400 mb-1">INTERCEPTED TRANSMISSIONS</div>
+    <div id="intercepts" class="space-y-1 text-[10px] h-20 overflow-y-auto"></div>
+  </div>
+
+  <div class="flex-1 border border-green-600 p-2 overflow-hidden flex flex-col bg-gray-950">
+    <div class="text-green-500 mb-1 flex justify-between">
+      <span>TACTICAL COMMAND FEED</span>
+      <span class="text-cyan-400 text-[10px]">ZULU TIME</span>
+    </div>
+    <div id="command-feed" class="flex-1 overflow-y-auto space-y-1 text-[10px]"></div>
+  </div>
+
+  <div class="mt-2 border border-cyan-600 p-2 bg-gray-950">
+    <div class="text-cyan-400 text-[10px] mb-1">BROADCAST</div>
+    <div class="flex gap-1">
+      <input id="msg-input" type="text" class="flex-1 bg-black border border-cyan-700 text-cyan-400 px-2 py-1 text-[10px] focus:outline-none focus:border-cyan-500" placeholder="ENTER COMMAND..." disabled>
+      <button class="bg-cyan-900 border border-cyan-600 px-3 text-cyan-400 hover:bg-cyan-800" disabled>TX</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { on } from "../core/bus.js";
+
+let targets = [];
+let signals = [];
+
+on("state:update", s => {
+  targets = s.targets;
+});
+
+on("signals:update", s => {
+  signals = s;
+  updateIntercepts();
+});
+
+on("ai:message", msg => {
+  addCommandMessage("AI-SYSTEM", msg);
+});
+
+const commandFeed = document.getElementById("command-feed");
+const interceptsEl = document.getElementById("intercepts");
+
+function addCommandMessage(source, msg) {
+  const time = new Date().toISOString().substr(11, 8);
+  const html = `
+    <div class="border-l-2 border-green-600 pl-2">
+      <div class="text-green-500">[${time}Z] ${source}:</div>
+      <div class="text-green-400 ml-2">${msg}</div>
+    </div>
+  `;
+  commandFeed.innerHTML = html + commandFeed.innerHTML;
+  
+  const messages = commandFeed.children;
+  while (messages.length > 20) {
+    commandFeed.removeChild(messages[messages.length - 1]);
+  }
+}
+
+function updateIntercepts() {
+  if (signals.length === 0) {
+    interceptsEl.innerHTML = '<div class="text-gray-600">No signals intercepted</div>';
+    return;
+  }
+
+  let html = '';
+  signals.slice(0, 5).forEach((sig, i) => {
+    const freq = sig.freq.toFixed(0);
+    const power = (sig.power * 100).toFixed(0);
+    html += `
+      <div class="border-l-2 border-amber-600 pl-2 text-amber-300">
+        <span class="text-amber-500">[SIGINT]</span> ${sig.band} @ ${freq}MHz 
+        <span class="text-red-400">PWR:${power}%</span>
+        ${sig.source ? `SRC:${sig.source}` : ''}
+      </div>
+    `;
+  });
+
+  interceptsEl.innerHTML = html;
+}
+
+// Messages système périodiques
+setInterval(() => {
+  const hostiles = targets.filter(t => t.hostile);
+  
+  if (hostiles.length > 5 && Math.random() < 0.3) {
+    addCommandMessage("COMMAND", `ALERT: Multiple hostile contacts - ${hostiles.length} targets tracked`);
+  }
+  
+  if (targets.length > 15 && Math.random() < 0.2) {
+    addCommandMessage("RADAR-OPS", `Airspace congested - ${targets.length} total contacts`);
+  }
+}, 8000);
+
+// Message initial
+setTimeout(() => {
+  addCommandMessage("SYSTEM", "Secure communications initialized");
+  addCommandMessage("SYSTEM", "All channels operational - COMCHECK complete");
+}, 500);
+</script>
+</body>
+</html>

@@ -1,121 +1,97 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html>
 <head>
-<meta charset="UTF-8" />
-<title>Military Radar</title>
-
+  <meta http-equiv="Content-Type" 
+      content="text/html; charset=utf-8">
 <script src="https://cdn.tailwindcss.com"></script>
+<script type="module" src="./core/system.js"></script>
+<script type="module">
+import "./core/signalEngine.js";
+</script>
+<script type="module">
+import { spawnTarget } from "./core/targetEngine.js";
+import { computeDefcon } from "./core/threatEngine.js";
 
+setInterval(()=>{
+  spawnTarget();
+},3000);
+
+setInterval(()=>{
+  computeDefcon();
+},1000);
+</script>
 <style>
-body {
-    background: #020617;
-}
-
-canvas {
-    background: radial-gradient(circle at center, #020617 0%, #020617 40%, #020617 100%);
-}
+  body {
+    background: linear-gradient(to bottom, #000000, #0a0a0a);
+  }
+  .military-border {
+    box-shadow: 0 0 10px rgba(0, 255, 100, 0.3);
+  }
 </style>
 </head>
+<body class="bg-slate-950 text-green-400 h-screen p-1 overflow-hidden">
 
-<body class="flex items-center justify-center min-h-screen">
+<!-- En-tête militaire -->
+<div class="border-2 border-green-500 bg-black p-2 mb-1 military-border">
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <div class="text-green-500 text-2xl font-bold tracking-widest">◈ TACTICAL COMMAND CENTER ◈</div>
+      <div class="text-xs text-green-400">
+        <span class="text-red-500">● CLASSIFIED</span> | 
+        <span>CLEARANCE: TOP SECRET</span>
+      </div>
+    </div>
+    <div class="text-green-400 text-xs">
+      <span id="header-time"></span>
+    </div>
+  </div>
+</div>
 
-<div class="relative">
-    <canvas id="radar" width="600" height="600" class="rounded-full shadow-2xl shadow-green-500"></canvas>
+<!-- Grille principale -->
+<div class="grid grid-cols-6 grid-rows-6 gap-1 h-[calc(100vh-80px)]">
+  
+  <!-- RADAR - Grand panneau central -->
+  <div class="col-span-3 row-span-4 military-border">
+    <iframe src="ui/radar.html" class="w-full h-full border-2 border-green-600 bg-black"></iframe>
+  </div>
 
-    <div class="absolute inset-0 rounded-full border border-green-400 opacity-30"></div>
+  <!-- MAP TACTIQUE -->
+  <div class="col-span-3 row-span-4 military-border">
+    <iframe src="ui/map.html" class="w-full h-full border-2 border-green-600 bg-black"></iframe>
+  </div>
+
+  <!-- PANELS - Targets/DEFCON/Spectrum/AI -->
+  <div class="col-span-2 row-span-2 military-border">
+    <iframe src="ui/panels.html" class="w-full h-full border-2 border-green-600 bg-black"></iframe>
+  </div>
+
+  <!-- INTELLIGENCE -->
+  <div class="col-span-2 row-span-2 military-border">
+    <iframe src="ui/intelligence.html" class="w-full h-full border-2 border-amber-600 bg-black"></iframe>
+  </div>
+
+  <!-- COMMUNICATIONS -->
+  <div class="col-span-2 row-span-2 military-border">
+    <iframe src="ui/comms.html" class="w-full h-full border-2 border-green-600 bg-black"></iframe>
+  </div>
+
+  <!-- SYSTEM STATUS -->
+  <div class="col-span-2 row-span-2 military-border">
+    <iframe src="ui/system.html" class="w-full h-full border-2 border-cyan-600 bg-black"></iframe>
+  </div>
 </div>
 
 <script>
-const canvas = document.getElementById("radar");
-const ctx = canvas.getContext("2d");
-
-const W = canvas.width;
-const H = canvas.height;
-const centerX = W / 2;
-const centerY = H / 2;
-const radius = W / 2 - 10;
-
-let angle = 0;
-
-const blips = Array.from({ length: 15 }, () => ({
-    r: Math.random() * radius,
-    a: Math.random() * Math.PI * 2,
-    alpha: Math.random()
-}));
-
-function drawGrid() {
-    ctx.strokeStyle = "rgba(34,197,94,0.15)";
-    ctx.lineWidth = 1;
-
-    for (let i = 1; i <= 4; i++) {
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, (radius / 4) * i, 0, Math.PI * 2);
-        ctx.stroke();
-    }
-
-    for (let i = 0; i < 12; i++) {
-        const a = (Math.PI * 2 / 12) * i;
-        ctx.beginPath();
-        ctx.moveTo(centerX, centerY);
-        ctx.lineTo(
-            centerX + Math.cos(a) * radius,
-            centerY + Math.sin(a) * radius
-        );
-        ctx.stroke();
-    }
+// Horloge dans l'en-tête
+function updateHeaderTime() {
+  const now = new Date();
+  const hours = String(now.getUTCHours()).padStart(2, '0');
+  const minutes = String(now.getUTCMinutes()).padStart(2, '0');
+  const seconds = String(now.getUTCSeconds()).padStart(2, '0');
+  document.getElementById('header-time').textContent = `ZULU: ${hours}:${minutes}:${seconds}Z`;
 }
-
-function drawBlips() {
-    blips.forEach(b => {
-        const x = centerX + Math.cos(b.a) * b.r;
-        const y = centerY + Math.sin(b.a) * b.r;
-
-        ctx.fillStyle = `rgba(34,197,94,${b.alpha})`;
-        ctx.beginPath();
-        ctx.arc(x, y, 4, 0, Math.PI * 2);
-        ctx.fill();
-    });
-}
-
-function drawSweep() {
-    const grad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
-    grad.addColorStop(0, "rgba(34,197,94,0.15)");
-    grad.addColorStop(1, "rgba(34,197,94,0)");
-
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.moveTo(centerX, centerY);
-    ctx.arc(centerX, centerY, radius, angle - 0.3, angle);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.strokeStyle = "rgba(34,197,94,0.8)";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(centerX, centerY);
-    ctx.lineTo(
-        centerX + Math.cos(angle) * radius,
-        centerY + Math.sin(angle) * radius
-    );
-    ctx.stroke();
-}
-
-function fade() {
-    ctx.fillStyle = "rgba(2,6,23,0.2)";
-    ctx.fillRect(0, 0, W, H);
-}
-
-function animate() {
-    fade();
-    drawGrid();
-    drawBlips();
-    drawSweep();
-
-    angle += 0.01;
-    requestAnimationFrame(animate);
-}
-
-animate();
+setInterval(updateHeaderTime, 1000);
+updateHeaderTime();
 </script>
 
 </body>

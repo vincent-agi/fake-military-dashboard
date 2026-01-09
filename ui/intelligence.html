@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-black text-amber-500 font-mono text-xs p-2 h-screen overflow-hidden">
+
+<div class="border border-amber-600 p-2 h-full flex flex-col">
+  <div class="text-sm tracking-widest text-amber-400 mb-2 border-b border-amber-600 pb-1">
+    ╔═ INTELLIGENCE & THREAT ANALYSIS ═╗
+  </div>
+
+  <div class="mb-3">
+    <div class="text-amber-400 text-xs mb-1">THREAT LEVEL ASSESSMENT</div>
+    <div class="grid grid-cols-5 gap-1">
+      <div id="threat-low" class="bg-green-900 border border-green-600 p-1 text-center text-green-400">LOW</div>
+      <div id="threat-med" class="bg-yellow-900 border border-yellow-600 p-1 text-center text-yellow-400">MED</div>
+      <div id="threat-high" class="bg-orange-900 border border-orange-600 p-1 text-center text-orange-400">HIGH</div>
+      <div id="threat-crit" class="bg-red-900 border border-red-600 p-1 text-center text-red-400">CRIT</div>
+      <div id="threat-max" class="bg-red-950 border border-red-500 p-1 text-center text-red-500 font-bold">MAX</div>
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <div class="text-amber-400 text-xs mb-1">SECTOR SURVEILLANCE</div>
+    <div class="grid grid-cols-4 gap-1 text-[10px]">
+      <div id="sector-n" class="border border-amber-600 p-1">N: <span class="text-green-400">CLEAR</span></div>
+      <div id="sector-e" class="border border-amber-600 p-1">E: <span class="text-green-400">CLEAR</span></div>
+      <div id="sector-s" class="border border-amber-600 p-1">S: <span class="text-green-400">CLEAR</span></div>
+      <div id="sector-w" class="border border-amber-600 p-1">W: <span class="text-green-400">CLEAR</span></div>
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <div class="text-amber-400 text-xs mb-1">SIGNAL INTELLIGENCE</div>
+    <div class="space-y-1" id="sigint">
+      <div class="text-cyan-400">○ No intercepted communications</div>
+    </div>
+  </div>
+
+  <div class="flex-1 border border-amber-600 p-2 overflow-y-auto bg-gray-950">
+    <div class="text-amber-400 text-xs mb-1">CLASSIFIED INTELLIGENCE FEED</div>
+    <div id="intel-feed" class="space-y-1 text-[10px]"></div>
+  </div>
+</div>
+
+<script type="module">
+import { on } from "../core/bus.js";
+
+let targets = [];
+let signals = [];
+
+on("state:update", s => {
+  targets = s.targets;
+  updateIntelligence();
+});
+
+on("signals:update", s => {
+  signals = s;
+  updateSignalIntel();
+});
+
+const intelFeed = document.getElementById("intel-feed");
+const sigintEl = document.getElementById("sigint");
+
+function updateIntelligence() {
+  const hostiles = targets.filter(t => t.hostile);
+  const sectors = { n: [], e: [], s: [], w: [] };
+  
+  // Analyser les secteurs
+  targets.forEach(t => {
+    const angle = (t.a * 180 / Math.PI + 360) % 360;
+    if (angle >= 315 || angle < 45) sectors.n.push(t);
+    else if (angle >= 45 && angle < 135) sectors.e.push(t);
+    else if (angle >= 135 && angle < 225) sectors.s.push(t);
+    else sectors.w.push(t);
+  });
+
+  // Mettre à jour les secteurs
+  updateSector('n', sectors.n);
+  updateSector('e', sectors.e);
+  updateSector('s', sectors.s);
+  updateSector('w', sectors.w);
+
+  // Niveau de menace
+  updateThreatLevel(hostiles.length);
+
+  // Générer des rapports d'intelligence
+  if (Math.random() < 0.05 && hostiles.length > 0) {
+    addIntelReport(`CLASSIFIED: ${hostiles.length} hostile signatures detected in operational area`);
+  }
+}
+
+function updateSector(dir, sectorTargets) {
+  const el = document.getElementById(`sector-${dir}`);
+  const hostiles = sectorTargets.filter(t => t.hostile);
+  const dirName = dir.toUpperCase();
+  
+  if (hostiles.length > 0) {
+    el.innerHTML = `${dirName}: <span class="text-red-500 font-bold">${hostiles.length} HOSTILE</span>`;
+  } else if (sectorTargets.length > 0) {
+    el.innerHTML = `${dirName}: <span class="text-green-400">${sectorTargets.length} TRACK</span>`;
+  } else {
+    el.innerHTML = `${dirName}: <span class="text-green-400">CLEAR</span>`;
+  }
+}
+
+function updateThreatLevel(hostileCount) {
+  ['low', 'med', 'high', 'crit', 'max'].forEach(level => {
+    document.getElementById(`threat-${level}`).style.opacity = '0.3';
+  });
+  
+  if (hostileCount === 0) {
+    document.getElementById('threat-low').style.opacity = '1';
+  } else if (hostileCount <= 3) {
+    document.getElementById('threat-med').style.opacity = '1';
+  } else if (hostileCount <= 6) {
+    document.getElementById('threat-high').style.opacity = '1';
+  } else if (hostileCount <= 10) {
+    document.getElementById('threat-crit').style.opacity = '1';
+  } else {
+    document.getElementById('threat-max').style.opacity = '1';
+  }
+}
+
+function updateSignalIntel() {
+  if (signals.length === 0) {
+    sigintEl.innerHTML = '<div class="text-cyan-400">○ No intercepted communications</div>';
+    return;
+  }
+
+  const droneSignals = signals.filter(s => s.band === 'DRONE');
+  const gsmSignals = signals.filter(s => s.band === 'GSM');
+  const wifiSignals = signals.filter(s => s.band === 'WIFI');
+
+  let html = '';
+  if (droneSignals.length > 0) {
+    html += `<div class="text-red-400">● ${droneSignals.length} DRONE freq detected</div>`;
+  }
+  if (gsmSignals.length > 0) {
+    html += `<div class="text-yellow-400">● ${gsmSignals.length} GSM intercepts</div>`;
+  }
+  if (wifiSignals.length > 0) {
+    html += `<div class="text-cyan-400">● ${wifiSignals.length} WIFI emissions</div>`;
+  }
+
+  sigintEl.innerHTML = html || '<div class="text-cyan-400">○ No signals</div>';
+}
+
+function addIntelReport(msg) {
+  const time = new Date().toISOString().substr(11, 8);
+  intelFeed.innerHTML = `<div class="text-amber-300">[${time}Z] ${msg}</div>` + intelFeed.innerHTML;
+  
+  const messages = intelFeed.children;
+  while (messages.length > 30) {
+    intelFeed.removeChild(messages[messages.length - 1]);
+  }
+}
+
+// Rapports périodiques
+setInterval(() => {
+  const hostiles = targets.filter(t => t.hostile);
+  if (hostiles.length > 0) {
+    const closest = hostiles.reduce((min, t) => t.r < min.r ? t : min, hostiles[0]);
+    const dist = Math.floor(closest.r * 100);
+    addIntelReport(`Nearest hostile: ${closest.id} at ${dist}km - Monitoring`);
+  }
+}, 10000);
+
+// Rapport initial
+setTimeout(() => {
+  addIntelReport('Intelligence system initialized');
+  addIntelReport('All surveillance systems operational');
+}, 1000);
+</script>
+</body>
+</html>

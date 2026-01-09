@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-black text-cyan-400 font-mono text-xs p-2 h-screen overflow-hidden">
+
+<div class="border border-cyan-600 p-2 h-full flex flex-col">
+  <div class="text-sm tracking-widest text-cyan-500 mb-2 border-b border-cyan-600 pb-1">
+    ╔═ SYSTEM STATUS ═╗
+  </div>
+
+  <div class="mb-2 bg-gray-950 border border-cyan-600 p-3">
+    <div class="text-center">
+      <div class="text-[10px] text-cyan-500 mb-1">ZULU TIME</div>
+      <div id="zulu-time" class="text-2xl text-cyan-400 font-bold tracking-wider"></div>
+      <div class="text-[10px] text-cyan-500 mt-1">
+        <span id="local-time"></span> | <span id="date"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="mb-2 bg-gray-950 border border-cyan-600 p-2">
+    <div class="text-cyan-500 text-[10px] mb-1">SYSTEM UPTIME</div>
+    <div id="uptime" class="text-cyan-400"></div>
+  </div>
+
+  <div class="mb-2 bg-gray-950 border border-green-600 p-2">
+    <div class="text-green-500 text-[10px] mb-2">OPERATIONAL STATUS</div>
+    <div class="space-y-1 text-[10px]">
+      <div class="flex justify-between">
+        <span>RADAR SYSTEMS</span>
+        <span class="text-green-400">● ONLINE</span>
+      </div>
+      <div class="flex justify-between">
+        <span>SIGINT ARRAYS</span>
+        <span class="text-green-400">● ONLINE</span>
+      </div>
+      <div class="flex justify-between">
+        <span>AI TACTICAL</span>
+        <span class="text-green-400">● ONLINE</span>
+      </div>
+      <div class="flex justify-between">
+        <span>COMMS NETWORK</span>
+        <span class="text-green-400">● ONLINE</span>
+      </div>
+      <div class="flex justify-between">
+        <span>DATA LINK</span>
+        <span class="text-green-400">● ONLINE</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="mb-2 bg-gray-950 border border-amber-600 p-2">
+    <div class="text-amber-500 text-[10px] mb-2">RESOURCE ALLOCATION</div>
+    <div class="space-y-2 text-[10px]">
+      <div>
+        <div class="flex justify-between mb-1">
+          <span>CPU</span>
+          <span id="cpu-val" class="text-amber-400">0%</span>
+        </div>
+        <div class="w-full bg-gray-800 h-1">
+          <div id="cpu-bar" class="bg-amber-500 h-1" style="width: 0%"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between mb-1">
+          <span>MEMORY</span>
+          <span id="mem-val" class="text-amber-400">0%</span>
+        </div>
+        <div class="w-full bg-gray-800 h-1">
+          <div id="mem-bar" class="bg-amber-500 h-1" style="width: 0%"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between mb-1">
+          <span>NETWORK</span>
+          <span id="net-val" class="text-amber-400">0%</span>
+        </div>
+        <div class="w-full bg-gray-800 h-1">
+          <div id="net-bar" class="bg-amber-500 h-1" style="width: 0%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex-1 bg-gray-950 border border-red-600 p-2 overflow-y-auto">
+    <div class="text-red-500 text-[10px] mb-1">SYSTEM ALERTS</div>
+    <div id="alerts" class="space-y-1 text-[10px]"></div>
+  </div>
+</div>
+
+<script type="module">
+import { on } from "../core/bus.js";
+
+const startTime = Date.now();
+let targets = [];
+
+on("state:update", s => {
+  targets = s.targets;
+  checkAlerts();
+});
+
+// Horloge
+function updateClock() {
+  const now = new Date();
+  
+  // Zulu time (UTC)
+  const hours = String(now.getUTCHours()).padStart(2, '0');
+  const minutes = String(now.getUTCMinutes()).padStart(2, '0');
+  const seconds = String(now.getUTCSeconds()).padStart(2, '0');
+  document.getElementById('zulu-time').textContent = `${hours}:${minutes}:${seconds}Z`;
+  
+  // Local time
+  const localHours = String(now.getHours()).padStart(2, '0');
+  const localMinutes = String(now.getMinutes()).padStart(2, '0');
+  document.getElementById('local-time').textContent = `LOCAL: ${localHours}:${localMinutes}`;
+  
+  // Date
+  const day = String(now.getDate()).padStart(2, '0');
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const year = now.getFullYear();
+  document.getElementById('date').textContent = `${day}/${month}/${year}`;
+  
+  // Uptime
+  const uptime = Math.floor((Date.now() - startTime) / 1000);
+  const uptimeHours = Math.floor(uptime / 3600);
+  const uptimeMinutes = Math.floor((uptime % 3600) / 60);
+  const uptimeSeconds = uptime % 60;
+  document.getElementById('uptime').textContent = 
+    `${String(uptimeHours).padStart(2, '0')}:${String(uptimeMinutes).padStart(2, '0')}:${String(uptimeSeconds).padStart(2, '0')}`;
+}
+
+setInterval(updateClock, 100);
+updateClock();
+
+// Simulation de ressources
+function updateResources() {
+  const cpuBase = 15 + targets.length * 2;
+  const cpu = Math.min(95, cpuBase + Math.random() * 10);
+  const mem = 40 + Math.random() * 15 + targets.length;
+  const net = 20 + Math.random() * 30;
+  
+  document.getElementById('cpu-val').textContent = `${cpu.toFixed(0)}%`;
+  document.getElementById('cpu-bar').style.width = `${cpu}%`;
+  document.getElementById('cpu-bar').className = cpu > 80 ? 'bg-red-500 h-1' : 'bg-amber-500 h-1';
+  
+  document.getElementById('mem-val').textContent = `${mem.toFixed(0)}%`;
+  document.getElementById('mem-bar').style.width = `${mem}%`;
+  
+  document.getElementById('net-val').textContent = `${net.toFixed(0)}%`;
+  document.getElementById('net-bar').style.width = `${net}%`;
+}
+
+setInterval(updateResources, 1000);
+
+// Alertes
+const alertsEl = document.getElementById('alerts');
+
+function addAlert(msg, level = 'warning') {
+  const time = new Date().toISOString().substr(11, 8);
+  const color = level === 'critical' ? 'text-red-400' : level === 'warning' ? 'text-yellow-400' : 'text-cyan-400';
+  
+  alertsEl.innerHTML = `<div class="${color}">[${time}Z] ${msg}</div>` + alertsEl.innerHTML;
+  
+  const alerts = alertsEl.children;
+  while (alerts.length > 15) {
+    alertsEl.removeChild(alerts[alerts.length - 1]);
+  }
+}
+
+function checkAlerts() {
+  const hostiles = targets.filter(t => t.hostile);
+  const closeHostiles = hostiles.filter(t => t.r < 0.3);
+  
+  if (closeHostiles.length > 0 && Math.random() < 0.1) {
+    addAlert(`${closeHostiles.length} hostile contact(s) in critical range`, 'critical');
+  }
+  
+  if (targets.length > 20 && Math.random() < 0.05) {
+    addAlert(`High traffic density: ${targets.length} contacts`, 'warning');
+  }
+}
+
+// Alertes système initiales
+setTimeout(() => {
+  addAlert('All systems initialized', 'info');
+  addAlert('Surveillance network operational', 'info');
+}, 500);
+</script>
+</body>
+</html>

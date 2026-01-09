@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-900 text-green-400 p-2">
+
+<div class="border border-green-600 h-full relative">
+  <div class="absolute top-1 left-2 text-xs tracking-widest text-green-500">
+    TACTICAL MAP
+  </div>
+  <canvas id="map" width="400" height="400" class="w-full h-full"></canvas>
+</div>
+
+<script type="module">
+import { on } from "../core/bus.js";
+
+let targets = [];
+
+on("state:update", s => {
+  targets = s.targets;
+});
+
+const c = document.getElementById("map");
+const ctx = c.getContext("2d");
+
+function drawZones(){
+  ctx.strokeStyle="rgba(255,0,0,0.4)";
+  ctx.strokeRect(150,150,100,100);
+  ctx.fillStyle="rgba(255,0,0,0.1)";
+  ctx.fillRect(150,150,100,100);
+  ctx.fillStyle="red";
+  ctx.fillText("NO-FLY",170,210);
+}
+
+function drawTargets(){
+  targets.forEach(t=>{
+    const x=200+Math.cos(t.a)*t.r*150;
+    const y=200+Math.sin(t.a)*t.r*150;
+
+    ctx.fillStyle=t.hostile?"red":"lime";
+    ctx.beginPath();
+    ctx.arc(x,y,5,0,Math.PI*2);
+    ctx.fill();
+
+    // trajectory
+    ctx.strokeStyle="rgba(0,255,0,0.5)";
+    ctx.beginPath();
+    ctx.moveTo(x,y);
+    ctx.lineTo(
+      x+Math.cos(t.a)*t.vr*5000,
+      y+Math.sin(t.a)*t.vr*5000
+    );
+    ctx.stroke();
+  });
+}
+
+function loop(){
+  ctx.fillStyle="rgb(15,23,42)";
+  ctx.fillRect(0,0,400,400);
+  drawZones();
+  drawTargets();
+  requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+</body>
+</html>
