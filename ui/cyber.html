@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-black text-purple-400 font-mono text-xs p-2 h-screen overflow-hidden">
+
+<div class="border border-purple-600 p-2 h-full flex flex-col">
+  <div class="text-sm tracking-widest text-purple-500 mb-2 border-b border-purple-600 pb-1">
+    ╔═ CYBER WARFARE & NETWORK SECURITY ═╗
+  </div>
+
+  <div class="grid grid-cols-2 gap-2 mb-2">
+    <div class="bg-gray-950 border border-purple-600 p-2">
+      <div class="text-purple-400 text-[10px] mb-2">NETWORK DEFENSE</div>
+      <div class="space-y-1 text-[10px]">
+        <div class="flex justify-between">
+          <span>FIREWALL</span>
+          <span class="text-green-400">● ACTIVE</span>
+        </div>
+        <div class="flex justify-between">
+          <span>IDS/IPS</span>
+          <span class="text-green-400">● ACTIVE</span>
+        </div>
+        <div class="flex justify-between">
+          <span>DDoS SHIELD</span>
+          <span class="text-green-400">● ACTIVE</span>
+        </div>
+        <div class="flex justify-between">
+          <span>ENCRYPTION</span>
+          <span class="text-cyan-400">AES-256</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-gray-950 border border-purple-600 p-2">
+      <div class="text-purple-400 text-[10px] mb-2">THREAT LEVEL</div>
+      <div id="cyber-threat" class="text-center">
+        <div class="text-3xl text-green-400 font-bold">LOW</div>
+        <div class="text-[10px] text-gray-500">No active threats</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-gray-950 border border-red-600 p-2 mb-2">
+    <div class="text-red-400 text-[10px] mb-1">INTRUSION ATTEMPTS</div>
+    <div id="intrusions" class="h-16 overflow-y-auto space-y-1 text-[10px]"></div>
+  </div>
+
+  <div class="bg-gray-950 border border-purple-600 p-2 mb-2">
+    <div class="text-purple-400 text-[10px] mb-2">NETWORK TRAFFIC</div>
+    <canvas id="traffic-graph" width="400" height="80" class="w-full"></canvas>
+  </div>
+
+  <div class="bg-gray-950 border border-amber-600 p-2 mb-2">
+    <div class="text-amber-400 text-[10px] mb-1">BLOCKED ATTACKS</div>
+    <div class="grid grid-cols-3 gap-2 text-[10px]">
+      <div class="border border-amber-700 p-1 text-center">
+        <div id="blocked-malware" class="text-lg text-amber-400">0</div>
+        <div class="text-gray-500">MALWARE</div>
+      </div>
+      <div class="border border-amber-700 p-1 text-center">
+        <div id="blocked-intrusions" class="text-lg text-amber-400">0</div>
+        <div class="text-gray-500">INTRUSIONS</div>
+      </div>
+      <div class="border border-amber-700 p-1 text-center">
+        <div id="blocked-ddos" class="text-lg text-amber-400">0</div>
+        <div class="text-gray-500">DDoS</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex-1 bg-gray-950 border border-purple-600 p-2 overflow-y-auto">
+    <div class="text-purple-400 text-[10px] mb-1">CYBER SECURITY LOG</div>
+    <div id="cyber-log" class="space-y-1 text-[10px]"></div>
+  </div>
+</div>
+
+<script type="module">
+import { on } from "../core/bus.js";
+
+let targets = [];
+let blockedMalware = 0;
+let blockedIntrusions = 0;
+let blockedDDoS = 0;
+let trafficData = new Array(100).fill(20);
+
+on("state:update", s => {
+  targets = s.targets;
+  updateCyberThreat();
+});
+
+const intrusionsEl = document.getElementById("intrusions");
+const logEl = document.getElementById("cyber-log");
+const trafficCanvas = document.getElementById("traffic-graph");
+const trafficCtx = trafficCanvas.getContext("2d");
+
+function updateCyberThreat() {
+  const hostiles = targets.filter(t => t.hostile);
+  const threatEl = document.getElementById("cyber-threat");
+  
+  if (hostiles.length === 0) {
+    threatEl.innerHTML = '<div class="text-3xl text-green-400 font-bold">LOW</div><div class="text-[10px] text-gray-500">No active threats</div>';
+  } else if (hostiles.length <= 3) {
+    threatEl.innerHTML = '<div class="text-3xl text-yellow-400 font-bold">MED</div><div class="text-[10px] text-yellow-500">Monitoring activity</div>';
+  } else if (hostiles.length <= 6) {
+    threatEl.innerHTML = '<div class="text-3xl text-orange-400 font-bold">HIGH</div><div class="text-[10px] text-orange-500">Elevated activity</div>';
+  } else {
+    threatEl.innerHTML = '<div class="text-3xl text-red-400 font-bold">CRIT</div><div class="text-[10px] text-red-500">Active intrusions</div>';
+  }
+}
+
+function drawTrafficGraph() {
+  // Ajouter nouvelle donnée
+  const newTraffic = 20 + Math.random() * 30 + (targets.length * 2);
+  trafficData.push(newTraffic);
+  if (trafficData.length > 100) trafficData.shift();
+  
+  // Dessiner
+  trafficCtx.fillStyle = "#000";
+  trafficCtx.fillRect(0, 0, 400, 80);
+  
+  // Ligne de référence
+  trafficCtx.strokeStyle = "rgba(168, 85, 247, 0.2)";
+  trafficCtx.beginPath();
+  trafficCtx.moveTo(0, 40);
+  trafficCtx.lineTo(400, 40);
+  trafficCtx.stroke();
+  
+  // Graphique
+  trafficCtx.strokeStyle = "rgba(168, 85, 247, 0.8)";
+  trafficCtx.lineWidth = 2;
+  trafficCtx.beginPath();
+  
+  trafficData.forEach((val, i) => {
+    const x = (i / 100) * 400;
+    const y = 80 - (val / 100) * 80;
+    if (i === 0) trafficCtx.moveTo(x, y);
+    else trafficCtx.lineTo(x, y);
+  });
+  
+  trafficCtx.stroke();
+  
+  // Zone de remplissage
+  trafficCtx.fillStyle = "rgba(168, 85, 247, 0.1)";
+  trafficCtx.lineTo(400, 80);
+  trafficCtx.lineTo(0, 80);
+  trafficCtx.closePath();
+  trafficCtx.fill();
+}
+
+setInterval(drawTrafficGraph, 200);
+
+function simulateIntrusion() {
+  const types = [
+    { type: "SQL Injection", ip: `${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}` },
+    { type: "Port Scan", ip: `${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}` },
+    { type: "Brute Force", ip: `${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}` },
+    { type: "Malware Upload", ip: `${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}` },
+    { type: "DDoS Attack", ip: `${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}` }
+  ];
+  
+  const attack = types[Math.floor(Math.random() * types.length)];
+  const time = new Date().toISOString().substr(11, 8);
+  
+  intrusionsEl.innerHTML = `
+    <div class="border-l-2 border-red-600 pl-2 text-red-400">
+      <span class="text-red-500">[${time}Z]</span> ${attack.type} from ${attack.ip} - <span class="text-green-400">BLOCKED</span>
+    </div>
+  ` + intrusionsEl.innerHTML;
+  
+  const items = intrusionsEl.children;
+  while (items.length > 4) {
+    intrusionsEl.removeChild(items[items.length - 1]);
+  }
+  
+  addLog(`Blocked ${attack.type} attempt from ${attack.ip}`, "alert");
+  
+  // Incrémenter compteurs
+  if (attack.type.includes("Malware")) {
+    blockedMalware++;
+    document.getElementById("blocked-malware").textContent = blockedMalware;
+  } else if (attack.type.includes("DDoS")) {
+    blockedDDoS++;
+    document.getElementById("blocked-ddos").textContent = blockedDDoS;
+  } else {
+    blockedIntrusions++;
+    document.getElementById("blocked-intrusions").textContent = blockedIntrusions;
+  }
+}
+
+function addLog(msg, level = "info") {
+  const time = new Date().toISOString().substr(11, 8);
+  const color = level === "alert" ? "text-red-400" : level === "warning" ? "text-yellow-400" : "text-purple-300";
+  
+  logEl.innerHTML = `<div class="${color}">[${time}Z] ${msg}</div>` + logEl.innerHTML;
+  
+  const logs = logEl.children;
+  while (logs.length > 25) {
+    logEl.removeChild(logs[logs.length - 1]);
+  }
+}
+
+// Simuler des attaques périodiques
+setInterval(() => {
+  if (Math.random() < 0.4) {
+    simulateIntrusion();
+  }
+}, 5000);
+
+setInterval(() => {
+  if (Math.random() < 0.1) {
+    addLog("Firewall rules updated", "info");
+  }
+}, 15000);
+
+setTimeout(() => {
+  addLog("Cyber defense systems initialized");
+  addLog("All security protocols active");
+}, 500);
+</script>
+</body>
+</html>

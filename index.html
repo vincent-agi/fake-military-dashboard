@@ -1,88 +1,90 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta http-equiv="Content-Type" 
-      content="text/html; charset=utf-8">
-<script src="https://cdn.tailwindcss.com"></script>
-<script type="module" src="./core/system.js"></script>
-<script type="module">
-import "./core/signalEngine.js";
-</script>
-<script type="module">
-import { spawnTarget } from "./core/targetEngine.js";
-import { computeDefcon } from "./core/threatEngine.js";
-
-setInterval(()=>{
-  spawnTarget();
-},3000);
-
-setInterval(()=>{
-  computeDefcon();
-},1000);
-</script>
-<style>
-  body {
-    background: linear-gradient(to bottom, #000000, #0a0a0a);
-  }
-  .military-border {
-    box-shadow: 0 0 10px rgba(0, 255, 100, 0.3);
-  }
-</style>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script type="module" src="./core/system.js"></script>
+  <style>
+    body {
+      background: linear-gradient(to bottom, #000000, #0a0a0a);
+      font-family: 'Courier New', monospace;
+    }
+    .military-border {
+      box-shadow: 0 0 10px rgba(0, 255, 100, 0.3);
+    }
+    .nav-btn {
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    .nav-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 15px currentColor;
+    }
+    .nav-btn.active {
+      box-shadow: 0 0 20px currentColor;
+      border-width: 3px;
+    }
+    iframe {
+      border: none;
+    }
+  </style>
 </head>
-<body class="bg-slate-950 text-green-400 h-screen p-1 overflow-hidden">
+<body class="bg-slate-950 text-green-400 h-screen p-2 overflow-hidden">
 
 <!-- En-tête militaire -->
-<div class="border-2 border-green-500 bg-black p-2 mb-1 military-border">
+<div class="border-2 border-green-500 bg-black p-3 mb-2 military-border">
   <div class="flex items-center justify-between">
-    <div class="flex items-center gap-4">
-      <div class="text-green-500 text-2xl font-bold tracking-widest">◈ TACTICAL COMMAND CENTER ◈</div>
-      <div class="text-xs text-green-400">
-        <span class="text-red-500">● CLASSIFIED</span> | 
+    <div class="flex items-center gap-6">
+      <div class="text-green-500 text-3xl font-bold tracking-widest">◈ TACTICAL COMMAND CENTER ◈</div>
+      <div class="text-sm text-green-400">
+        <span class="text-red-500 font-bold">● CLASSIFIED</span> | 
         <span>CLEARANCE: TOP SECRET</span>
       </div>
     </div>
-    <div class="text-green-400 text-xs">
+    <div class="text-green-400 text-sm font-bold">
       <span id="header-time"></span>
     </div>
   </div>
 </div>
 
-<!-- Grille principale -->
-<div class="grid grid-cols-6 grid-rows-6 gap-1 h-[calc(100vh-80px)]">
-  
-  <!-- RADAR - Grand panneau central -->
-  <div class="col-span-3 row-span-4 military-border">
-    <iframe src="ui/radar.html" class="w-full h-full border-2 border-green-600 bg-black"></iframe>
-  </div>
+<!-- Menu de navigation -->
+<div class="border-2 border-cyan-500 bg-black p-3 mb-2 military-border">
+  <div class="grid grid-cols-4 gap-3">
+    
+    <button onclick="loadView('tactical')" id="btn-tactical" class="nav-btn active border-2 border-green-500 bg-gray-950 p-4 text-left">
+      <div class="text-green-500 text-xs tracking-wider mb-1">◈ TACTICAL VIEW</div>
+      <div class="text-green-400 text-[10px]">Radar • Map • Targets • Comms</div>
+      <div class="text-green-600 text-[9px] mt-1">Primary surveillance dashboard</div>
+    </button>
 
-  <!-- MAP TACTIQUE -->
-  <div class="col-span-3 row-span-4 military-border">
-    <iframe src="ui/map.html" class="w-full h-full border-2 border-green-600 bg-black"></iframe>
-  </div>
+    <button onclick="loadView('intelligence')" id="btn-intelligence" class="nav-btn border-2 border-amber-500 bg-gray-950 p-4 text-left">
+      <div class="text-amber-500 text-xs tracking-wider mb-1">◈ INTELLIGENCE VIEW</div>
+      <div class="text-amber-400 text-[10px]">ISR • Intel • Cyber • Prediction</div>
+      <div class="text-amber-600 text-[9px] mt-1">Advanced intelligence analysis</div>
+    </button>
 
-  <!-- PANELS - Targets/DEFCON/Spectrum/AI -->
-  <div class="col-span-2 row-span-2 military-border">
-    <iframe src="ui/panels.html" class="w-full h-full border-2 border-green-600 bg-black"></iframe>
-  </div>
+    <button onclick="loadView('operations')" id="btn-operations" class="nav-btn border-2 border-teal-500 bg-gray-950 p-4 text-left">
+      <div class="text-teal-500 text-xs tracking-wider mb-1">◈ OPERATIONS VIEW</div>
+      <div class="text-teal-400 text-[10px]">Missions • Assets • Status</div>
+      <div class="text-teal-600 text-[9px] mt-1">Mission control & resources</div>
+    </button>
 
-  <!-- INTELLIGENCE -->
-  <div class="col-span-2 row-span-2 military-border">
-    <iframe src="ui/intelligence.html" class="w-full h-full border-2 border-amber-600 bg-black"></iframe>
-  </div>
+    <button onclick="loadView('complete')" id="btn-complete" class="nav-btn border-2 border-purple-500 bg-gray-950 p-4 text-left">
+      <div class="text-purple-500 text-xs tracking-wider mb-1">◈ COMPLETE VIEW</div>
+      <div class="text-purple-400 text-[10px]">All Systems • Full Display</div>
+      <div class="text-purple-600 text-[9px] mt-1">All panels visible (high res)</div>
+    </button>
 
-  <!-- COMMUNICATIONS -->
-  <div class="col-span-2 row-span-2 military-border">
-    <iframe src="ui/comms.html" class="w-full h-full border-2 border-green-600 bg-black"></iframe>
-  </div>
-
-  <!-- SYSTEM STATUS -->
-  <div class="col-span-2 row-span-2 military-border">
-    <iframe src="ui/system.html" class="w-full h-full border-2 border-cyan-600 bg-black"></iframe>
   </div>
 </div>
 
+<!-- Zone d'affichage de la vue -->
+<div class="border-2 border-green-500 bg-black military-border h-[calc(100vh-200px)]">
+  <iframe id="main-view" src="views/tactical.html" class="w-full h-full"></iframe>
+</div>
+
 <script>
-// Horloge dans l'en-tête
+// Horloge
 function updateHeaderTime() {
   const now = new Date();
   const hours = String(now.getUTCHours()).padStart(2, '0');
@@ -92,6 +94,25 @@ function updateHeaderTime() {
 }
 setInterval(updateHeaderTime, 1000);
 updateHeaderTime();
+
+// Navigation
+function loadView(viewName) {
+  // Mettre à jour l'iframe
+  document.getElementById('main-view').src = `views/${viewName}.html`;
+  
+  // Mettre à jour les boutons actifs
+  const buttons = document.querySelectorAll('.nav-btn');
+  buttons.forEach(btn => btn.classList.remove('active'));
+  document.getElementById(`btn-${viewName}`).classList.add('active');
+  
+  // Log de changement de vue
+  console.log(`[COMMAND CENTER] View switched to: ${viewName.toUpperCase()}`);
+}
+
+// Message de démarrage
+console.log('[COMMAND CENTER] Tactical Command Center initialized');
+console.log('[COMMAND CENTER] All systems operational');
+console.log('[COMMAND CENTER] Current view: TACTICAL');
 </script>
 
 </body>

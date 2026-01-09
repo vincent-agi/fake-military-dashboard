@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-black text-teal-400 font-mono text-xs p-2 h-screen overflow-hidden">
+
+<div class="border border-teal-600 p-2 h-full flex flex-col">
+  <div class="text-sm tracking-widest text-teal-500 mb-2 border-b border-teal-600 pb-1">
+    ╔═ TACTICAL MISSIONS & OBJECTIVES ═╗
+  </div>
+
+  <div class="bg-gray-950 border border-teal-600 p-2 mb-2">
+    <div class="text-teal-400 text-[10px] mb-2">CURRENT OPERATION</div>
+    <div class="text-lg text-teal-400 font-bold mb-1">OPERATION SILENT WATCH</div>
+    <div class="text-[10px] text-gray-400">Continuous airspace monitoring and threat assessment</div>
+  </div>
+
+  <div class="bg-gray-950 border border-teal-600 p-2 mb-2">
+    <div class="text-teal-400 text-[10px] mb-2">MISSION OBJECTIVES</div>
+    <div id="objectives" class="space-y-2 text-[10px]">
+      <div class="flex items-start gap-2">
+        <span class="text-green-400">✓</span>
+        <div class="flex-1">
+          <div class="text-teal-300">Maintain radar surveillance</div>
+          <div class="text-gray-500 text-[9px]">Status: ONGOING</div>
+        </div>
+        <div class="text-green-400">100%</div>
+      </div>
+      <div class="flex items-start gap-2">
+        <span class="text-yellow-400">●</span>
+        <div class="flex-1">
+          <div class="text-teal-300">Track hostile contacts</div>
+          <div class="text-gray-500 text-[9px]">Status: IN PROGRESS</div>
+        </div>
+        <div id="obj-hostile" class="text-yellow-400">0%</div>
+      </div>
+      <div class="flex items-start gap-2">
+        <span class="text-yellow-400">●</span>
+        <div class="flex-1">
+          <div class="text-teal-300">Maintain DEFCON readiness</div>
+          <div class="text-gray-500 text-[9px]">Status: ACTIVE</div>
+        </div>
+        <div class="text-green-400">100%</div>
+      </div>
+      <div class="flex items-start gap-2">
+        <span class="text-yellow-400">●</span>
+        <div class="flex-1">
+          <div class="text-teal-300">Intelligence gathering</div>
+          <div class="text-gray-500 text-[9px]">Status: ONGOING</div>
+        </div>
+        <div class="text-green-400">100%</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-gray-950 border border-amber-600 p-2 mb-2">
+    <div class="text-amber-400 text-[10px] mb-1">PRIORITY TARGETS</div>
+    <div id="priority-targets" class="space-y-1 text-[10px] max-h-16 overflow-y-auto"></div>
+  </div>
+
+  <div class="grid grid-cols-2 gap-2 mb-2">
+    <div class="bg-gray-950 border border-teal-600 p-2">
+      <div class="text-[10px] text-gray-500 mb-1">MISSION TIME</div>
+      <div id="mission-time" class="text-lg text-teal-400">00:00:00</div>
+    </div>
+    <div class="bg-gray-950 border border-teal-600 p-2">
+      <div class="text-[10px] text-gray-500 mb-1">ENGAGEMENT RULES</div>
+      <div class="text-lg text-yellow-400">WEAPONS HOLD</div>
+    </div>
+  </div>
+
+  <div class="bg-gray-950 border border-red-600 p-2 mb-2">
+    <div class="text-red-400 text-[10px] mb-1">THREAT RESPONSE PROTOCOL</div>
+    <div class="space-y-1 text-[10px]">
+      <div class="flex justify-between">
+        <span>Level 1 (0-3 hostiles)</span>
+        <span class="text-green-400">MONITOR</span>
+      </div>
+      <div class="flex justify-between">
+        <span>Level 2 (4-6 hostiles)</span>
+        <span class="text-yellow-400">ALERT</span>
+      </div>
+      <div class="flex justify-between">
+        <span>Level 3 (7+ hostiles)</span>
+        <span class="text-red-400">ENGAGE</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex-1 bg-gray-950 border border-teal-600 p-2 overflow-y-auto">
+    <div class="text-teal-400 text-[10px] mb-1">MISSION LOG</div>
+    <div id="mission-log" class="space-y-1 text-[10px]"></div>
+  </div>
+</div>
+
+<script type="module">
+import { on } from "../core/bus.js";
+
+let targets = [];
+const missionStart = Date.now();
+
+on("state:update", s => {
+  targets = s.targets;
+  updateObjectives();
+  updatePriorityTargets();
+});
+
+const priorityEl = document.getElementById("priority-targets");
+const logEl = document.getElementById("mission-log");
+
+function updateMissionTime() {
+  const elapsed = Math.floor((Date.now() - missionStart) / 1000);
+  const hours = Math.floor(elapsed / 3600);
+  const minutes = Math.floor((elapsed % 3600) / 60);
+  const seconds = elapsed % 60;
+  
+  document.getElementById("mission-time").textContent = 
+    `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+setInterval(updateMissionTime, 1000);
+
+function updateObjectives() {
+  const hostiles = targets.filter(t => t.hostile);
+  const progress = Math.min(100, hostiles.length * 10);
+  document.getElementById("obj-hostile").textContent = `${progress}%`;
+}
+
+function updatePriorityTargets() {
+  const hostiles = targets.filter(t => t.hostile)
+    .sort((a, b) => a.r - b.r)
+    .slice(0, 4);
+  
+  if (hostiles.length === 0) {
+    priorityEl.innerHTML = '<div class="text-gray-600">No priority targets assigned</div>';
+    return;
+  }
+  
+  let html = '';
+  hostiles.forEach((t, i) => {
+    const dist = Math.floor(t.r * 100);
+    const priority = i === 0 ? 'ALPHA' : i === 1 ? 'BRAVO' : i === 2 ? 'CHARLIE' : 'DELTA';
+    html += `
+      <div class="border-l-2 border-red-600 pl-2 text-red-400">
+        <span class="text-amber-400">[${priority}]</span> ${t.id} - ${dist}km - 
+        <span class="text-cyan-400">TRACKING</span>
+      </div>
+    `;
+  });
+  priorityEl.innerHTML = html;
+}
+
+function addLog(msg, level = "info") {
+  const time = new Date().toISOString().substr(11, 8);
+  const color = level === "alert" ? "text-red-400" : level === "warning" ? "text-yellow-400" : "text-teal-300";
+  
+  logEl.innerHTML = `<div class="${color}">[${time}Z] ${msg}</div>` + logEl.innerHTML;
+  
+  const logs = logEl.children;
+  while (logs.length > 20) {
+    logEl.removeChild(logs[logs.length - 1]);
+  }
+}
+
+let lastHostileCount = 0;
+
+setInterval(() => {
+  const hostiles = targets.filter(t => t.hostile);
+  
+  if (hostiles.length > lastHostileCount && hostiles.length >= 3) {
+    addLog(`Mission update: ${hostiles.length} hostile contacts detected`, "warning");
+  }
+  
+  if (hostiles.length >= 7 && Math.random() < 0.1) {
+    addLog("Threat level CRITICAL - Recommend escalation", "alert");
+  }
+  
+  lastHostileCount = hostiles.length;
+}, 5000);
+
+setTimeout(() => {
+  addLog("Mission SILENT WATCH commenced");
+  addLog("All objectives assigned");
+  addLog("Rules of engagement: WEAPONS HOLD");
+}, 500);
+</script>
+</body>
+</html>

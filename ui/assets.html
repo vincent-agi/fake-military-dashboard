@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-black text-lime-400 font-mono text-xs p-2 h-screen overflow-hidden">
+
+<div class="border border-lime-600 p-2 h-full flex flex-col">
+  <div class="text-sm tracking-widest text-lime-500 mb-2 border-b border-lime-600 pb-1">
+    ╔═ MILITARY ASSETS & RESOURCES ═╗
+  </div>
+
+  <div class="grid grid-cols-2 gap-2 mb-2">
+    <div class="bg-gray-950 border border-lime-600 p-2">
+      <div class="text-lime-400 text-[10px] mb-2">AIR ASSETS</div>
+      <div class="space-y-1 text-[10px]">
+        <div class="flex justify-between">
+          <span>F-22 Raptors</span>
+          <span class="text-green-400">4 READY</span>
+        </div>
+        <div class="flex justify-between">
+          <span>F-35 Lightning</span>
+          <span class="text-green-400">6 READY</span>
+        </div>
+        <div class="flex justify-between">
+          <span>UAV Reapers</span>
+          <span class="text-yellow-400">2 PATROL</span>
+        </div>
+        <div class="flex justify-between">
+          <span>AWACS</span>
+          <span class="text-green-400">1 AIRBORNE</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-gray-950 border border-lime-600 p-2">
+      <div class="text-lime-400 text-[10px] mb-2">GROUND ASSETS</div>
+      <div class="space-y-1 text-[10px]">
+        <div class="flex justify-between">
+          <span>SAM Sites</span>
+          <span class="text-green-400">8 ACTIVE</span>
+        </div>
+        <div class="flex justify-between">
+          <span>Radar Stations</span>
+          <span class="text-green-400">5 ONLINE</span>
+        </div>
+        <div class="flex justify-between">
+          <span>CIWS Systems</span>
+          <span class="text-green-400">12 READY</span>
+        </div>
+        <div class="flex justify-between">
+          <span>Command Posts</span>
+          <span class="text-green-400">3 ACTIVE</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-gray-950 border border-lime-600 p-2 mb-2">
+    <div class="text-lime-400 text-[10px] mb-2">WEAPONS INVENTORY</div>
+    <div class="grid grid-cols-3 gap-2 text-[10px]">
+      <div class="border border-lime-700 p-1">
+        <div class="text-gray-500">AIM-120</div>
+        <div class="text-lg text-lime-400">48</div>
+      </div>
+      <div class="border border-lime-700 p-1">
+        <div class="text-gray-500">AIM-9X</div>
+        <div class="text-lg text-lime-400">64</div>
+      </div>
+      <div class="border border-lime-700 p-1">
+        <div class="text-gray-500">SM-6</div>
+        <div class="text-lg text-lime-400">32</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-gray-950 border border-cyan-600 p-2 mb-2">
+    <div class="text-cyan-400 text-[10px] mb-2">PERSONNEL STATUS</div>
+    <div class="grid grid-cols-2 gap-2 text-[10px]">
+      <div>
+        <div class="flex justify-between mb-1">
+          <span>On Duty</span>
+          <span class="text-green-400">127</span>
+        </div>
+        <div class="flex justify-between">
+          <span>Ready</span>
+          <span class="text-yellow-400">53</span>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between mb-1">
+          <span>Off Duty</span>
+          <span class="text-gray-500">89</span>
+        </div>
+        <div class="flex justify-between">
+          <span>Total</span>
+          <span class="text-cyan-400">269</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-gray-950 border border-amber-600 p-2 mb-2">
+    <div class="text-amber-400 text-[10px] mb-1">FUEL & LOGISTICS</div>
+    <div class="space-y-2 text-[10px]">
+      <div>
+        <div class="flex justify-between mb-1">
+          <span>JP-8 Fuel</span>
+          <span class="text-lime-400">87%</span>
+        </div>
+        <div class="w-full bg-gray-800 h-1">
+          <div class="bg-lime-500 h-1" style="width: 87%"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between mb-1">
+          <span>Ammunition</span>
+          <span class="text-lime-400">92%</span>
+        </div>
+        <div class="w-full bg-gray-800 h-1">
+          <div class="bg-lime-500 h-1" style="width: 92%"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between mb-1">
+          <span>Spare Parts</span>
+          <span class="text-yellow-400">68%</span>
+        </div>
+        <div class="w-full bg-gray-800 h-1">
+          <div class="bg-yellow-500 h-1" style="width: 68%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex-1 bg-gray-950 border border-lime-600 p-2 overflow-y-auto">
+    <div class="text-lime-400 text-[10px] mb-1">ASSET STATUS LOG</div>
+    <div id="asset-log" class="space-y-1 text-[10px]"></div>
+  </div>
+</div>
+
+<script type="module">
+import { on } from "../core/bus.js";
+
+let targets = [];
+
+on("state:update", s => {
+  targets = s.targets;
+  checkAssetStatus();
+});
+
+const logEl = document.getElementById("asset-log");
+
+function checkAssetStatus() {
+  const hostiles = targets.filter(t => t.hostile);
+  
+  // Si beaucoup d'hostiles, simuler déploiement d'assets
+  if (hostiles.length >= 5 && Math.random() < 0.1) {
+    addLog("Alert: F-22 flight scrambled for intercept", "alert");
+  }
+  
+  if (hostiles.length >= 8 && Math.random() < 0.08) {
+    addLog("SAM sites elevated to WEAPONS FREE", "warning");
+  }
+}
+
+function addLog(msg, level = "info") {
+  const time = new Date().toISOString().substr(11, 8);
+  const color = level === "alert" ? "text-red-400" : level === "warning" ? "text-yellow-400" : "text-lime-300";
+  
+  logEl.innerHTML = `<div class="${color}">[${time}Z] ${msg}</div>` + logEl.innerHTML;
+  
+  const logs = logEl.children;
+  while (logs.length > 20) {
+    logEl.removeChild(logs[logs.length - 1]);
+  }
+}
+
+// Simulations périodiques
+setInterval(() => {
+  const events = [
+    { msg: "UAV-REAPER-1 fuel at 75%, continuing patrol", level: "info" },
+    { msg: "F-35 flight completed CAP, RTB initiated", level: "info" },
+    { msg: "Radar Station 3 maintenance completed", level: "info" },
+    { msg: "SAM Site 5 test fire successful", level: "info" },
+    { msg: "AWACS refueling operation commenced", level: "info" }
+  ];
+  
+  if (Math.random() < 0.15) {
+    const event = events[Math.floor(Math.random() * events.length)];
+    addLog(event.msg, event.level);
+  }
+}, 8000);
+
+setTimeout(() => {
+  addLog("All military assets operational");
+  addLog("Air superiority maintained");
+  addLog("Ground defense systems at DEFCON 5");
+  addLog("Resource levels nominal");
+}, 500);
+</script>
+</body>
+</html>

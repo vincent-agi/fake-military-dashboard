@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-black text-orange-400 font-mono text-xs p-2 h-screen overflow-hidden">
+
+<div class="border border-orange-600 p-2 h-full flex flex-col">
+  <div class="text-sm tracking-widest text-orange-500 mb-2 border-b border-orange-600 pb-1">
+    ╔═ THREAT PREDICTION & ANALYSIS ═╗
+  </div>
+
+  <div class="bg-gray-950 border border-orange-600 p-2 mb-2">
+    <div class="text-orange-400 text-[10px] mb-2">PREDICTIVE THREAT ASSESSMENT</div>
+    <div class="grid grid-cols-2 gap-2">
+      <div>
+        <div class="text-[10px] text-gray-500 mb-1">NEXT 15 MIN</div>
+        <div id="pred-15" class="text-lg text-yellow-400">LOW</div>
+      </div>
+      <div>
+        <div class="text-[10px] text-gray-500 mb-1">NEXT 30 MIN</div>
+        <div id="pred-30" class="text-lg text-orange-400">MED</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-gray-950 border border-orange-600 p-2 mb-2">
+    <div class="text-orange-400 text-[10px] mb-2">THREAT PATTERN ANALYSIS</div>
+    <canvas id="pattern-graph" width="400" height="100" class="w-full border border-orange-700"></canvas>
+  </div>
+
+  <div class="bg-gray-950 border border-red-600 p-2 mb-2">
+    <div class="text-red-400 text-[10px] mb-1">HIGH PROBABILITY THREATS</div>
+    <div id="high-prob" class="space-y-1 text-[10px] h-20 overflow-y-auto"></div>
+  </div>
+
+  <div class="grid grid-cols-3 gap-2 mb-2">
+    <div class="bg-gray-950 border border-orange-600 p-2">
+      <div class="text-[10px] text-gray-500 mb-1">CONFIDENCE</div>
+      <div id="confidence" class="text-xl text-orange-400">87%</div>
+    </div>
+    <div class="bg-gray-950 border border-orange-600 p-2">
+      <div class="text-[10px] text-gray-500 mb-1">ACCURACY</div>
+      <div id="accuracy" class="text-xl text-orange-400">92%</div>
+    </div>
+    <div class="bg-gray-950 border border-orange-600 p-2">
+      <div class="text-[10px] text-gray-500 mb-1">SAMPLES</div>
+      <div id="samples" class="text-xl text-orange-400">0</div>
+    </div>
+  </div>
+
+  <div class="bg-gray-950 border border-amber-600 p-2 mb-2">
+    <div class="text-amber-400 text-[10px] mb-1">BEHAVIORAL PATTERNS</div>
+    <div id="patterns" class="space-y-1 text-[10px]">
+      <div class="flex justify-between">
+        <span>Coordinated Movement</span>
+        <span class="text-gray-600">NOT DETECTED</span>
+      </div>
+      <div class="flex justify-between">
+        <span>Evasive Maneuvers</span>
+        <span class="text-gray-600">NOT DETECTED</span>
+      </div>
+      <div class="flex justify-between">
+        <span>Formation Flying</span>
+        <span class="text-gray-600">NOT DETECTED</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex-1 bg-gray-950 border border-orange-600 p-2 overflow-y-auto">
+    <div class="text-orange-400 text-[10px] mb-1">ANALYSIS LOG</div>
+    <div id="analysis-log" class="space-y-1 text-[10px]"></div>
+  </div>
+</div>
+
+<script type="module">
+import { on } from "../core/bus.js";
+
+let targets = [];
+let threatHistory = new Array(50).fill(0);
+let sampleCount = 0;
+
+on("state:update", s => {
+  targets = s.targets;
+  sampleCount++;
+  document.getElementById("samples").textContent = sampleCount;
+  analyzeThreat();
+  updatePatterns();
+});
+
+const highProbEl = document.getElementById("high-prob");
+const logEl = document.getElementById("analysis-log");
+const canvas = document.getElementById("pattern-graph");
+const ctx = canvas.getContext("2d");
+
+function analyzeThreat() {
+  const hostiles = targets.filter(t => t.hostile);
+  const closeHostiles = hostiles.filter(t => t.r < 0.5);
+  
+  // Calculer niveau de menace
+  const threatLevel = hostiles.length * 10 + closeHostiles.length * 20;
+  threatHistory.push(threatLevel);
+  if (threatHistory.length > 50) threatHistory.shift();
+  
+  // Prédictions basées sur la tendance
+  const recentTrend = threatHistory.slice(-10);
+  const avgRecent = recentTrend.reduce((a, b) => a + b, 0) / recentTrend.length;
+  const trend = recentTrend[recentTrend.length - 1] - recentTrend[0];
+  
+  // Prédiction 15 min
+  const pred15 = avgRecent + (trend * 1.5);
+  const pred15El = document.getElementById("pred-15");
+  if (pred15 < 30) {
+    pred15El.innerHTML = '<div class="text-lg text-green-400">LOW</div>';
+  } else if (pred15 < 60) {
+    pred15El.innerHTML = '<div class="text-lg text-yellow-400">MED</div>';
+  } else if (pred15 < 100) {
+    pred15El.innerHTML = '<div class="text-lg text-orange-400">HIGH</div>';
+  } else {
+    pred15El.innerHTML = '<div class="text-lg text-red-400">CRIT</div>';
+  }
+  
+  // Prédiction 30 min
+  const pred30 = avgRecent + (trend * 3);
+  const pred30El = document.getElementById("pred-30");
+  if (pred30 < 30) {
+    pred30El.innerHTML = '<div class="text-lg text-green-400">LOW</div>';
+  } else if (pred30 < 60) {
+    pred30El.innerHTML = '<div class="text-lg text-yellow-400">MED</div>';
+  } else if (pred30 < 100) {
+    pred30El.innerHTML = '<div class="text-lg text-orange-400">HIGH</div>';
+  } else {
+    pred30El.innerHTML = '<div class="text-lg text-red-400">CRIT</div>';
+  }
+  
+  // Confidence
+  const confidence = 70 + Math.min(20, sampleCount / 5);
+  document.getElementById("confidence").textContent = confidence.toFixed(0) + "%";
+  
+  // Accuracy
+  const accuracy = 85 + Math.random() * 10;
+  document.getElementById("accuracy").textContent = accuracy.toFixed(0) + "%";
+  
+  // Menaces à haute probabilité
+  updateHighProbThreats(closeHostiles);
+  
+  // Dessiner le graphique
+  drawPattern();
+}
+
+function updateHighProbThreats(closeHostiles) {
+  if (closeHostiles.length === 0) {
+    highProbEl.innerHTML = '<div class="text-gray-600">No immediate threats detected</div>';
+    return;
+  }
+  
+  let html = '';
+  closeHostiles.slice(0, 3).forEach(t => {
+    const prob = (70 + Math.random() * 25).toFixed(0);
+    const dist = Math.floor(t.r * 100);
+    html += `
+      <div class="border-l-2 border-red-600 pl-2 text-red-400">
+        ${t.id} - ${dist}km - Engagement probability: <span class="text-orange-400">${prob}%</span>
+      </div>
+    `;
+  });
+  highProbEl.innerHTML = html;
+}
+
+function drawPattern() {
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, 400, 100);
+  
+  // Ligne de référence
+  ctx.strokeStyle = "rgba(249, 115, 22, 0.2)";
+  ctx.beginPath();
+  ctx.moveTo(0, 50);
+  ctx.lineTo(400, 50);
+  ctx.stroke();
+  
+  // Zones de risque
+  ctx.fillStyle = "rgba(34, 197, 94, 0.1)";
+  ctx.fillRect(0, 70, 400, 30);
+  ctx.fillStyle = "rgba(234, 179, 8, 0.1)";
+  ctx.fillRect(0, 50, 400, 20);
+  ctx.fillStyle = "rgba(239, 68, 68, 0.1)";
+  ctx.fillRect(0, 0, 400, 30);
+  
+  // Graphique de menace
+  ctx.strokeStyle = "rgba(249, 115, 22, 0.8)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  
+  threatHistory.forEach((val, i) => {
+    const x = (i / 50) * 400;
+    const y = 100 - (val / 150) * 100;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  
+  ctx.stroke();
+  
+  // Zone de remplissage
+  ctx.fillStyle = "rgba(249, 115, 22, 0.15)";
+  ctx.lineTo(400, 100);
+  ctx.lineTo(0, 100);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function updatePatterns() {
+  const hostiles = targets.filter(t => t.hostile);
+  const patternsEl = document.getElementById("patterns");
+  
+  // Détecter mouvements coordonnés
+  const coordinated = hostiles.length >= 3 && 
+    Math.abs(hostiles[0].vr - hostiles[1].vr) < 0.0003;
+  
+  // Détecter manœuvres évasives
+  const evasive = hostiles.some(t => Math.abs(t.vr) > 0.0018);
+  
+  // Détecter formation
+  const formation = hostiles.length >= 4;
+  
+  patternsEl.innerHTML = `
+    <div class="flex justify-between">
+      <span>Coordinated Movement</span>
+      <span class="${coordinated ? 'text-red-400' : 'text-gray-600'}">
+        ${coordinated ? '⚠ DETECTED' : 'NOT DETECTED'}
+      </span>
+    </div>
+    <div class="flex justify-between">
+      <span>Evasive Maneuvers</span>
+      <span class="${evasive ? 'text-yellow-400' : 'text-gray-600'}">
+        ${evasive ? '⚠ DETECTED' : 'NOT DETECTED'}
+      </span>
+    </div>
+    <div class="flex justify-between">
+      <span>Formation Flying</span>
+      <span class="${formation ? 'text-orange-400' : 'text-gray-600'}">
+        ${formation ? '⚠ DETECTED' : 'NOT DETECTED'}
+      </span>
+    </div>
+  `;
+  
+  if (coordinated && Math.random() < 0.1) {
+    addLog("Pattern detected: Coordinated hostile movement", "warning");
+  }
+}
+
+function addLog(msg, level = "info") {
+  const time = new Date().toISOString().substr(11, 8);
+  const color = level === "alert" ? "text-red-400" : level === "warning" ? "text-yellow-400" : "text-orange-300";
+  
+  logEl.innerHTML = `<div class="${color}">[${time}Z] ${msg}</div>` + logEl.innerHTML;
+  
+  const logs = logEl.children;
+  while (logs.length > 20) {
+    logEl.removeChild(logs[logs.length - 1]);
+  }
+}
+
+setInterval(() => {
+  if (Math.random() < 0.08) {
+    addLog("Threat prediction model updated", "info");
+  }
+}, 12000);
+
+setTimeout(() => {
+  addLog("Predictive analysis system initialized");
+  addLog("Machine learning models loaded");
+  addLog("Beginning threat pattern analysis");
+}, 500);
+</script>
+</body>
+</html>

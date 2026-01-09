@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-black text-blue-400 font-mono text-xs p-2 h-screen overflow-hidden">
+
+<div class="border border-blue-600 p-2 h-full flex flex-col">
+  <div class="text-sm tracking-widest text-blue-500 mb-2 border-b border-blue-600 pb-1">
+    ╔═ ISR - INTELLIGENCE, SURVEILLANCE & RECONNAISSANCE ═╗
+  </div>
+
+  <div class="grid grid-cols-2 gap-2 mb-2">
+    <div class="bg-gray-950 border border-blue-600 p-2">
+      <div class="text-blue-400 text-[10px] mb-1">SATELLITE COVERAGE</div>
+      <div class="space-y-1 text-[10px]">
+        <div class="flex justify-between">
+          <span>SAT-01 (KEYHOLE)</span>
+          <span class="text-green-400">● ONLINE</span>
+        </div>
+        <div class="flex justify-between">
+          <span>SAT-02 (SIGINT)</span>
+          <span class="text-green-400">● ONLINE</span>
+        </div>
+        <div class="flex justify-between">
+          <span>SAT-03 (WEATHER)</span>
+          <span class="text-green-400">● ONLINE</span>
+        </div>
+        <div class="flex justify-between">
+          <span>UAV-REAPER-1</span>
+          <span class="text-yellow-400">● PATROL</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-gray-950 border border-blue-600 p-2">
+      <div class="text-blue-400 text-[10px] mb-1">IMAGING STATUS</div>
+      <div class="space-y-1 text-[10px]">
+        <div class="flex justify-between">
+          <span>OPTICAL</span>
+          <span class="text-green-400">CLEAR</span>
+        </div>
+        <div class="flex justify-between">
+          <span>INFRARED</span>
+          <span class="text-green-400">ACTIVE</span>
+        </div>
+        <div class="flex justify-between">
+          <span>SAR</span>
+          <span class="text-green-400">STANDBY</span>
+        </div>
+        <div class="flex justify-between">
+          <span>RESOLUTION</span>
+          <span class="text-cyan-400">0.5m</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-gray-950 border border-blue-600 p-2 mb-2">
+    <div class="text-blue-400 text-[10px] mb-2">OVERHEAD SURVEILLANCE MAP</div>
+    <canvas id="satellite-view" width="400" height="200" class="w-full border border-blue-700"></canvas>
+  </div>
+
+  <div class="bg-gray-950 border border-amber-600 p-2 mb-2">
+    <div class="text-amber-400 text-[10px] mb-1">RECONNAISSANCE TARGETS</div>
+    <div id="recon-targets" class="space-y-1 text-[10px]"></div>
+  </div>
+
+  <div class="flex-1 bg-gray-950 border border-blue-600 p-2 overflow-y-auto">
+    <div class="text-blue-400 text-[10px] mb-1">ISR ACTIVITY LOG</div>
+    <div id="isr-log" class="space-y-1 text-[10px]"></div>
+  </div>
+</div>
+
+<script type="module">
+import { on } from "../core/bus.js";
+
+let targets = [];
+
+on("state:update", s => {
+  targets = s.targets;
+  updateReconTargets();
+  drawSatelliteView();
+});
+
+const reconEl = document.getElementById("recon-targets");
+const logEl = document.getElementById("isr-log");
+const canvas = document.getElementById("satellite-view");
+const ctx = canvas.getContext("2d");
+
+function updateReconTargets() {
+  const hostiles = targets.filter(t => t.hostile).slice(0, 5);
+  
+  if (hostiles.length === 0) {
+    reconEl.innerHTML = '<div class="text-gray-600">No priority targets</div>';
+    return;
+  }
+
+  let html = '';
+  hostiles.forEach((t, i) => {
+    const dist = Math.floor(t.r * 100);
+    const angle = ((t.a * 180 / Math.PI) + 360) % 360;
+    html += `
+      <div class="border-l-2 border-red-600 pl-2 text-red-400">
+        <span class="text-amber-500">[TARGET-${i+1}]</span> ${t.id} 
+        @ ${dist}km / ${angle.toFixed(0)}° 
+        <span class="text-cyan-400">TRACKING</span>
+      </div>
+    `;
+  });
+  reconEl.innerHTML = html;
+}
+
+function drawSatelliteView() {
+  // Fond
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, 400, 200);
+  
+  // Grille de référence
+  ctx.strokeStyle = "rgba(59, 130, 246, 0.2)";
+  ctx.lineWidth = 1;
+  
+  for (let i = 0; i < 400; i += 40) {
+    ctx.beginPath();
+    ctx.moveTo(i, 0);
+    ctx.lineTo(i, 200);
+    ctx.stroke();
+  }
+  
+  for (let i = 0; i < 200; i += 40) {
+    ctx.beginPath();
+    ctx.moveTo(0, i);
+    ctx.lineTo(400, i);
+    ctx.stroke();
+  }
+  
+  // Zone d'intérêt centrale
+  ctx.strokeStyle = "rgba(59, 130, 246, 0.5)";
+  ctx.strokeRect(150, 50, 100, 100);
+  
+  // Dessiner les targets vus du dessus
+  targets.forEach(t => {
+    const x = 200 + Math.cos(t.a) * t.r * 150;
+    const y = 100 + Math.sin(t.a) * t.r * 80;
+    
+    if (x >= 0 && x <= 400 && y >= 0 && y <= 200) {
+      ctx.fillStyle = t.hostile ? "rgba(239, 68, 68, 0.8)" : "rgba(34, 197, 94, 0.6)";
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Cercle de détection
+      ctx.strokeStyle = t.hostile ? "rgba(239, 68, 68, 0.3)" : "rgba(34, 197, 94, 0.2)";
+      ctx.beginPath();
+      ctx.arc(x, y, 12, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  });
+  
+  // Scanner effet
+  const time = Date.now() / 1000;
+  const scanX = ((time * 50) % 400);
+  ctx.strokeStyle = "rgba(59, 130, 246, 0.4)";
+  ctx.beginPath();
+  ctx.moveTo(scanX, 0);
+  ctx.lineTo(scanX, 200);
+  ctx.stroke();
+}
+
+setInterval(drawSatelliteView, 100);
+
+function addLog(msg, level = "info") {
+  const time = new Date().toISOString().substr(11, 8);
+  const color = level === "alert" ? "text-red-400" : level === "warning" ? "text-yellow-400" : "text-blue-300";
+  
+  logEl.innerHTML = `<div class="${color}">[${time}Z] ${msg}</div>` + logEl.innerHTML;
+  
+  const logs = logEl.children;
+  while (logs.length > 20) {
+    logEl.removeChild(logs[logs.length - 1]);
+  }
+}
+
+// Logs périodiques
+setInterval(() => {
+  const hostiles = targets.filter(t => t.hostile);
+  if (hostiles.length > 0 && Math.random() < 0.15) {
+    addLog(`SAT-01: Tracking ${hostiles.length} hostile signatures`, "info");
+  }
+  
+  if (Math.random() < 0.05) {
+    addLog("UAV-REAPER-1: Patrol route updated", "info");
+  }
+}, 7000);
+
+setTimeout(() => {
+  addLog("ISR systems initialized");
+  addLog("Satellite constellation: 3/3 operational");
+  addLog("UAV assets: 1 airborne");
+}, 500);
+</script>
+</body>
+</html>

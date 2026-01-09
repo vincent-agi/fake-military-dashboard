@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script type="module" src="../core/system.js"></script>
+  <style>
+    body { background: linear-gradient(to bottom, #000000, #0a0a0a); }
+    .military-border { box-shadow: 0 0 10px rgba(0, 255, 100, 0.3); }
+  </style>
+</head>
+<body class="bg-slate-950 text-green-400 h-screen p-1 overflow-hidden">
+
+<!-- Vue complète avec tous les panneaux (comme avant) -->
+<div class="grid grid-cols-12 grid-rows-8 gap-1 h-full">
+  
+  <div class="col-span-4 row-span-4 military-border">
+    <iframe src="../ui/radar.html" class="w-full h-full border-2 border-green-600 bg-black"></iframe>
+  </div>
+
+  <div class="col-span-4 row-span-4 military-border">
+    <iframe src="../ui/map.html" class="w-full h-full border-2 border-green-600 bg-black"></iframe>
+  </div>
+
+  <div class="col-span-4 row-span-4 military-border">
+    <iframe src="../ui/isr.html" class="w-full h-full border-2 border-blue-600 bg-black"></iframe>
+  </div>
+
+  <div class="col-span-3 row-span-4 military-border">
+    <iframe src="../ui/panels.html" class="w-full h-full border-2 border-green-600 bg-black"></iframe>
+  </div>
+
+  <div class="col-span-3 row-span-4 military-border">
+    <iframe src="../ui/intelligence.html" class="w-full h-full border-2 border-amber-600 bg-black"></iframe>
+  </div>
+
+  <div class="col-span-3 row-span-4 military-border">
+    <iframe src="../ui/cyber.html" class="w-full h-full border-2 border-purple-600 bg-black"></iframe>
+  </div>
+
+  <div class="col-span-3 row-span-4 military-border">
+    <iframe src="../ui/prediction.html" class="w-full h-full border-2 border-orange-600 bg-black"></iframe>
+  </div>
+
+  <div class="col-span-4 row-span-4 military-border">
+    <iframe src="../ui/comms.html" class="w-full h-full border-2 border-green-600 bg-black"></iframe>
+  </div>
+
+  <div class="col-span-4 row-span-4 military-border">
+    <iframe src="../ui/missions.html" class="w-full h-full border-2 border-teal-600 bg-black"></iframe>
+  </div>
+
+  <div class="col-span-4 row-span-4 military-border">
+    <iframe src="../ui/assets.html" class="w-full h-full border-2 border-lime-600 bg-black"></iframe>
+  </div>
+
+  <div class="col-span-4 row-span-4 military-border">
+    <iframe src="../ui/system.html" class="w-full h-full border-2 border-cyan-600 bg-black"></iframe>
+  </div>
+</div>
+
+</body>
+</html>
