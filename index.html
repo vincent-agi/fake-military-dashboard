@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<title>Military Radar</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+body {
+    background: #020617;
+}
+
+canvas {
+    background: radial-gradient(circle at center, #020617 0%, #020617 40%, #020617 100%);
+}
+</style>
+</head>
+
+<body class="flex items-center justify-center min-h-screen">
+
+<div class="relative">
+    <canvas id="radar" width="600" height="600" class="rounded-full shadow-2xl shadow-green-500"></canvas>
+
+    <div class="absolute inset-0 rounded-full border border-green-400 opacity-30"></div>
+</div>
+
+<script>
+const canvas = document.getElementById("radar");
+const ctx = canvas.getContext("2d");
+
+const W = canvas.width;
+const H = canvas.height;
+const centerX = W / 2;
+const centerY = H / 2;
+const radius = W / 2 - 10;
+
+let angle = 0;
+
+const blips = Array.from({ length: 15 }, () => ({
+    r: Math.random() * radius,
+    a: Math.random() * Math.PI * 2,
+    alpha: Math.random()
+}));
+
+function drawGrid() {
+    ctx.strokeStyle = "rgba(34,197,94,0.15)";
+    ctx.lineWidth = 1;
+
+    for (let i = 1; i <= 4; i++) {
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, (radius / 4) * i, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+
+    for (let i = 0; i < 12; i++) {
+        const a = (Math.PI * 2 / 12) * i;
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(
+            centerX + Math.cos(a) * radius,
+            centerY + Math.sin(a) * radius
+        );
+        ctx.stroke();
+    }
+}
+
+function drawBlips() {
+    blips.forEach(b => {
+        const x = centerX + Math.cos(b.a) * b.r;
+        const y = centerY + Math.sin(b.a) * b.r;
+
+        ctx.fillStyle = `rgba(34,197,94,${b.alpha})`;
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fill();
+    });
+}
+
+function drawSweep() {
+    const grad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
+    grad.addColorStop(0, "rgba(34,197,94,0.15)");
+    grad.addColorStop(1, "rgba(34,197,94,0)");
+
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY);
+    ctx.arc(centerX, centerY, radius, angle - 0.3, angle);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(34,197,94,0.8)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY);
+    ctx.lineTo(
+        centerX + Math.cos(angle) * radius,
+        centerY + Math.sin(angle) * radius
+    );
+    ctx.stroke();
+}
+
+function fade() {
+    ctx.fillStyle = "rgba(2,6,23,0.2)";
+    ctx.fillRect(0, 0, W, H);
+}
+
+function animate() {
+    fade();
+    drawGrid();
+    drawBlips();
+    drawSweep();
+
+    angle += 0.01;
+    requestAnimationFrame(animate);
+}
+
+animate();
+</script>
+
+</body>
+</html>
